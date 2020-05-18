@@ -1,0 +1,35 @@
+/*Query 1:this query to compare the payment amounts in each successive month */
+
+WITH t3 AS (
+            SELECT t2.payment_mon, t2.full_name, t2.count, t2.sum,
+                   LEAD(t2.sum) OVER (PARTITION BY t2.full_name ORDER BY t2.payment_mon) - t2.sum   AS lead_difference
+            FROM  
+               (
+                SELECT c.customer_id, CONCAT(c.first_name, ' ', c.last_name) AS full_name,
+                       SUM(p.amount) AS total_payment
+                FROM  customer AS c
+                      INNER JOIN payment AS p
+                              ON c.customer_id = p.customer_id
+                GROUP BY c.customer_id
+                ORDER BY total_payment DESC
+                   LIMIT 10 
+                ) t1
+              JOIN (
+                   SELECT c.customer_id, DATE_TRUNC('month',p.payment_date) AS payment_mon,CONCAT(c.first_name, ' ', c.last_name) AS full_name,
+                           SUM(p.amount) AS sum,
+                           COUNT(p.amount) AS count
+                    FROM  customer AS c
+                          INNER JOIN payment AS p
+                                  ON c.customer_id = p.customer_id
+             GROUP BY c.customer_id, DATE_TRUNC('month',p.payment_date)
+             ORDER BY c.customer_id
+                  ) t2
+                  ON t1.full_name = t2.full_name
+             ORDER BY 2, 1
+             )
+SELECT *
+  FROM t3
+ WHERE lead_difference = (SELECT MAX(lead_difference)
+                          FROM t3
+                          );
+

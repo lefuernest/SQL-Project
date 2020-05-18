@@ -1,0 +1,30 @@
+/*Query 1:this query to compare the payment amounts in each successive month and
+ identify the customer name who paid the most difference in terms of payments.*/
+WITH tabletemp AS (
+                   SELECT c.customer_id, SUM (p.amount) as total
+                    FROM payment p
+                    JOIN customer c
+                      ON p.customer_id=c.customer_id
+                GROUP BY c.customer_id
+                ORDER BY total DESC
+                   LIMIT 10
+                  )
+
+SELECT pay_month, full_name, pay_amount,
+       pay_amount - LAG(pay_amount) OVER (ORDER BY pay_amount) AS lag_difference
+FROM
+    (
+     SELECT DATE_TRUNC ('month', p.payment_date) AS pay_mon,
+            c.first_name || ' ' || c.last_name AS full_name,
+           SUM (p.amount) AS pay_amount
+      FROM customer c
+      JOIN tabletemp
+        ON c.customer_id = tabletemp.customer_id
+      JOIN payment p
+        ON p.customer_id = c.customer_id
+  GROUP BY full_name, pay_month
+  ORDER BY full_name
+    ) x
+GROUP BY x.full_name, x.pay_month, x.pay_amount
+ORDER BY x.full_name, x.pay_month
+

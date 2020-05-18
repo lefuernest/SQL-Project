@@ -1,0 +1,19 @@
+/*Query 1:this query solves how many times a category of a movie is rented ou limted to 13 rows */
+ WITH family_category AS (SELECT f.title,
+      c.name AS category
+ FROM film f
+ JOIN film_category fc
+   ON f.film_id = fc.film_id
+ JOIN category c
+   ON fc.category_id = c.category_id AND c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+ JOIN inventory i
+   ON f.film_id = i.film_id
+ JOIN rental r
+   ON i.inventory_id = r.inventory_id
+    )
+SELECT DISTINCT title,
+       category,
+ COUNT(title) OVER(PARTITION BY title) AS times_rented
+  FROM family_category
+ ORDER BY 2, 1
+ LIMIT 13;
